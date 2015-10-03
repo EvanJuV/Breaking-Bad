@@ -49,6 +49,7 @@ public class BreakingBad extends JFrame implements ActionListener, KeyListener, 
     int iScore;   // Score del juego
     int iSpeed;   // Distancia que recorre por lapso de tiempo
     int iSpeedLapse;   // Lapso de tiempo para mover pelota
+    int iTipoRes;
     boolean bPause;    // variable que indica si el juega esta en pausa
     boolean bEnd;      // variable que indica que el juego ha terminado
     Box boxBall;       // pelota del juego
@@ -59,11 +60,10 @@ public class BreakingBad extends JFrame implements ActionListener, KeyListener, 
     private Graphics dbg;	// Objeto grafico
     private long lNow, lBefore; // Timers de control de velocidad
     ImageIcon imgBackground;
+    private Image pausa; // Imagen a desplegar al estar en pausa
+    private Image gameover; // Imagen a desplegar al finalizar
+    String strMsg;
     Thread th;
-    JButton butNew;
-    JButton butSave;
-    JButton butLoad;
-    JPanel panel;
     
     // Constructor de la clase
     BreakingBad() {
@@ -76,32 +76,7 @@ public class BreakingBad extends JFrame implements ActionListener, KeyListener, 
         addKeyListener(this);
         setFocusable(true);
         setVisible(true);
-        panel = new JPanel();
-        butNew = new JButton("NEW GAME");
-        butNew.setActionCommand("New");
-        butNew.addActionListener(this);
-        butNew.setLocation(420, 500);
-        butNew.setFocusable(false);
-        butNew.setSize(200, 50);
-        butSave = new JButton("SAVE GAME");
-        butSave.setActionCommand("Save");
-        butSave.setFocusable(false);
-        butSave.addActionListener(this);
-        butSave.setLocation(420, 600);
-        butSave.setSize(200, 50);
-        butLoad = new JButton("LOAD GAME");
-        butLoad.setActionCommand("Load");
-        butLoad.addActionListener(this);
-        butLoad.setFocusable(false);
-        butLoad.setLocation(420, 700);
-        butLoad.setSize(200, 50);
-        butNew.setVisible(false);
-        butSave.setVisible(false);
-        butLoad.setVisible(false);
-        panel.add(butNew);
-        panel.add(butSave);
-        panel.add(butLoad);
-        add(panel);
+        iTipoRes = 0;
         init();
         start();
     }
@@ -120,8 +95,15 @@ public class BreakingBad extends JFrame implements ActionListener, KeyListener, 
         iSpeedLapse = 6;
         iScore = 0;
         iLives = 5;
-        boxBall = new Box((int) (Math.random() * this.getWidth()), (int) (Math.random() * this.getHeight() / 8) + 500, 30, 30);
-        boxBar = new Box(450, 850, 150, 50);
+        URL eURL = this.getClass().getResource("bullet.png");
+        boxBall = new Box((int) (Math.random() * this.getWidth()), (int) (Math.random() * this.getHeight() / 8) + 500, 30, 30,Toolkit.getDefaultToolkit().getImage(eURL));
+        URL fURL = this.getClass().getResource("hank.png");
+        boxBar = new Box(450, 783, 200, 116, Toolkit.getDefaultToolkit().getImage(fURL));
+        URL gURL = this.getClass().getResource("tabCrack.png");
+        URL paURL=this.getClass().getResource("pausaFnl.png");
+	pausa=Toolkit.getDefaultToolkit().getImage(paURL);
+        URL gaURL=this.getClass().getResource("gameover.png");
+	pausa=Toolkit.getDefaultToolkit().getImage(gaURL);
         bPause = false;
         bEnd = false;
         //inicializamos la pelota moviendose hacia abajo 
@@ -148,7 +130,7 @@ public class BreakingBad extends JFrame implements ActionListener, KeyListener, 
                 x = 485;
                 y = 440;
             }
-            alList.add(new Box(x, y, 100, 50));
+            alList.add(new Box(x, y, 100, 50,Toolkit.getDefaultToolkit().getImage(gURL)));
             x += 110;
         }
     }
@@ -249,16 +231,15 @@ public class BreakingBad extends JFrame implements ActionListener, KeyListener, 
             iSpeedLapse--;
         }
         // checamos choque con cada brick
-        for (Box box : alList) {
-            if (box.intersects(boxBall)) {
-                if (boxBall.getiX() < box.getiX() + 10 || boxBall.getiX() > box.getiX() + box.getiWidth() - 10) {
+        for(int i=0;i<alList.size();i++){
+            if (alList.get(i).intersects(boxBall)) {
+                if (boxBall.getiX() < alList.get(i).getiX() + 10 || boxBall.getiX() > alList.get(i).getiX() + alList.get(i).getiWidth() - 10) {
                     iMovX *= -1;
                 } else {
                     iMovY *= -1;
                 }
                 // "eliminamos" el brick
-                box.setiHeight(0);
-                box.setiWidth(0);
+                alList.remove(alList.get(i));
                 iScore += 100;
                 iBricks--;
             }
@@ -276,34 +257,50 @@ public class BreakingBad extends JFrame implements ActionListener, KeyListener, 
         g.setFont(new Font("Arial", Font.TYPE1_FONT, 20));
         g.drawImage(imgBackground.getImage(), 0, 0, this);
         g.drawString("Lives left: " + iLives + "   Score: " + iScore, 30, 80);
-        butNew.setVisible(bPause);
-        butSave.setVisible(bPause);
-        butLoad.setVisible(bPause);
-        // Si el juego esta pausado
-//        if(bPause) {
-//            super.paintComponents(g);
-//        }
         // Si el juego esta perdido
         if (bEnd) {
+            // Dibuja pantalla de fin
+            g.drawImage(gameover, 0, 0, this);
             // definimos boton
             butReset = new JButton("PLAY AGAIN?");
-            butNew.setActionCommand("New");
             butReset.addActionListener(this);
             butReset.setLocation(420, 300);
             butReset.setSize(200, 50);
             add(butReset);
             super.paintComponents(g);
         }
-        if (boxBall != null && boxBar != null && !alList.isEmpty()) {
-            g.setColor(Color.red);
+        if(bPause){
+            // Dibuja pantalla de pausa
+            g.drawImage(pausa, 0, 0, this);
+            g.drawString("Juego Pausado", 450, 300);
+            g.drawString("G para guardar", 450, 750);
+            g.drawString("L para cargar", 450, 800);
+        }
+        if(iTipoRes != 0) {
+            switch(iTipoRes) {
+                case 1:
+                    strMsg = "Juego guardado exitosamente";
+                    break;
+                case 2:
+                    strMsg = "Juego cargado exitosamente";
+                    break;
+                case 3:
+                    strMsg = "No hay ningun juego guardado";
+                    break;
+                case 4:
+                    strMsg = "Error al guardar";
+                    break;
+            }
+            g.drawString(strMsg, 20, 50);
+        }
+        if (!bEnd && !bPause && boxBall != null && boxBar != null && !alList.isEmpty()) {
+            g.setColor(Color.GRAY);
             //Dibuja la pelota en la posicion actualizada
-            g.fillRect(boxBall.getiX(), boxBall.getiY(), boxBall.getiWidth(), boxBall.getiHeight());
-            g.setColor(Color.MAGENTA);
+            g.fillOval(boxBall.getiX(), boxBall.getiY(), boxBall.getiWidth(), boxBall.getiHeight());
             // Dibuja la barra en la posicion actualizada
-            g.fillRect(boxBar.getiX(), boxBar.getiY(), boxBar.getiWidth(), boxBar.getiHeight());
-            g.setColor(Color.GREEN);
+            g.drawImage(boxBar.getImagenI(), boxBar.getiX(),boxBar.getiY(), this);
             for (Box b : alList) {
-                g.fillRect(b.getiX(), b.getiY(), b.getiWidth(), b.getiHeight());
+                g.drawImage(b.getImagenI(), b.getiX(),b.getiY(), this);
             }
         } else {
             //Da un mensaje mientras se carga el dibujo	
@@ -335,7 +332,6 @@ public class BreakingBad extends JFrame implements ActionListener, KeyListener, 
 
         // Dibuja la imagen actualizada
         g.drawImage(dbImage, 0, 0, this);
-        draw(g);
     }
     
     public void guardarJuego() {
@@ -351,16 +347,15 @@ public class BreakingBad extends JFrame implements ActionListener, KeyListener, 
         hash.put("boxBall", boxBall);
         hash.put("boxBar", boxBar);
         hash.put("alList", alList);
-//        hash.put("lNow", lNow);
-//        hash.put("lBefore", lBefore);
         try {
             FileOutputStream fileOut = new FileOutputStream("savedGame.ser");
             ObjectOutputStream out = new ObjectOutputStream(fileOut);
             out.writeObject(hash);
-            
             out.close();
             fileOut.close();
+            iTipoRes = 1;
         } catch(FileNotFoundException e) {
+            iTipoRes = 4;
             e.printStackTrace();
         } catch(IOException e) {
             e.printStackTrace();
@@ -377,9 +372,11 @@ public class BreakingBad extends JFrame implements ActionListener, KeyListener, 
             hash = (Hashtable) in.readObject();
             in.close();
             fileIn.close();
+            iTipoRes = 2;
         } catch(ClassNotFoundException e) {
             e.printStackTrace();
         } catch(FileNotFoundException e) {
+            iTipoRes = 3;
             // File not found
             e.printStackTrace();
         } catch(IOException e) {
@@ -397,27 +394,11 @@ public class BreakingBad extends JFrame implements ActionListener, KeyListener, 
         boxBall = (Box) hash.put("boxBall", boxBall);
         boxBar = (Box) hash.put("boxBar", boxBar);
         alList = (ArrayList) hash.put("alList", alList);
-//        lNow = (long) hash.put("lNow", lNow);
-//        lBefore = (long) hash.put("lBefore", lBefore);
         System.out.println("Cargado");
     }
 
     @Override
     public void actionPerformed(ActionEvent ae) {
-        switch(ae.getActionCommand()) {
-            case "New":
-                this.dispose();
-                new BreakingBad();
-                break;
-            case "Save":
-                guardarJuego();
-//                bPause = false;
-                break;
-            case "Load":
-                cargarJuego();
-//                bPause = false;
-                break;
-        }
     }
 
     @Override
@@ -429,12 +410,31 @@ public class BreakingBad extends JFrame implements ActionListener, KeyListener, 
         // Se detecta la tecla presionada y se cambia el valor de la variable control
         if (ke.getKeyCode() == KeyEvent.VK_RIGHT) {
             iDirBar = 6;
+            return;
         } else if (ke.getKeyCode() == KeyEvent.VK_LEFT) {
             iDirBar = 4;
+            return;
         }
         // si se presiona la letra p, se pausa el juego
         if (ke.getKeyCode() == KeyEvent.VK_P) {
             bPause = !bPause;
+            iTipoRes = 0;
+            return;
+        }
+        if(bPause) {
+            if(ke.getKeyCode() == KeyEvent.VK_R) {
+                this.dispose();
+                new BreakingBad();
+                return;
+            }
+            if(ke.getKeyCode() == KeyEvent.VK_G) {
+                guardarJuego();
+                return;
+            }
+            if(ke.getKeyCode() == KeyEvent.VK_L) {
+                cargarJuego();
+                return;
+            }
         }
     }
 
