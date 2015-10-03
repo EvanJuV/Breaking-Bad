@@ -8,18 +8,24 @@
  *
  * @author Evan
  */
+
+import javax.swing.ImageIcon;
+import java.awt.Image;
+
 public class Box {
     private int iX;       // posicion en x del objeto
     private int iY;       // posicion en y del objeto
     private int iWidth;   // ancho del objeto
     private int iHeight;  // altura del objeto
+    private ImageIcon icono;    //icono.
     
     // Constructor por default
-    public Box(int iX, int iY, int iWidth, int iHeight) {
+    public Box(int iX, int iY, int iWidth, int iHeight, Image image) {
         this.iX = iX;
         this.iY = iY;
         this.iWidth = iWidth;
         this.iHeight = iHeight;
+        icono = new ImageIcon(image);
     }
     
     // getters y setters
@@ -54,6 +60,15 @@ public class Box {
 
     public void setiHeight(int iHeight) {
         this.iHeight = iHeight;
+    }
+    public void setImageIcon(ImageIcon icono){
+            this.icono = icono;
+    }
+    public ImageIcon getImageIcon(){
+            return icono;
+    }
+    public Image getImagenI(){
+        return icono.getImage();
     }
     
     /**

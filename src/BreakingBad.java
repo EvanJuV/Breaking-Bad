@@ -47,6 +47,8 @@ public class BreakingBad extends JFrame implements ActionListener, KeyListener, 
     private Graphics dbg;	// Objeto grafico
     private long lNow, lBefore; // Timers de control de velocidad
     ImageIcon imgBackground;
+    private Image pausa; // Imagen a desplegar al estar en pausa
+    private Image gameover; // Imagen a desplegar al finalizar
     Thread th;
 
     // Constructor de la clase
@@ -79,8 +81,15 @@ public class BreakingBad extends JFrame implements ActionListener, KeyListener, 
         iSpeedLapse = 6;
         iScore = 0;
         iLives = 5;
-        boxBall = new Box((int) (Math.random() * this.getWidth()), (int) (Math.random() * this.getHeight() / 8) + 500, 30, 30);
-        boxBar = new Box(450, 850, 150, 50);
+        URL eURL = this.getClass().getResource("bullet.png");
+        boxBall = new Box((int) (Math.random() * this.getWidth()), (int) (Math.random() * this.getHeight() / 8) + 500, 30, 30,Toolkit.getDefaultToolkit().getImage(eURL));
+        URL fURL = this.getClass().getResource("hank.png");
+        boxBar = new Box(450, 783, 200, 116, Toolkit.getDefaultToolkit().getImage(fURL));
+        URL gURL = this.getClass().getResource("tabCrack.png");
+        URL paURL=this.getClass().getResource("pausaFnl.png");
+	pausa=Toolkit.getDefaultToolkit().getImage(paURL);
+        URL gaURL=this.getClass().getResource("gameover.png");
+	pausa=Toolkit.getDefaultToolkit().getImage(gaURL);
         bPause = false;
         bEnd = false;
         //inicializamos la pelota moviendose hacia abajo 
@@ -107,7 +116,7 @@ public class BreakingBad extends JFrame implements ActionListener, KeyListener, 
                 x = 485;
                 y = 440;
             }
-            alList.add(new Box(x, y, 100, 50));
+            alList.add(new Box(x, y, 100, 50,Toolkit.getDefaultToolkit().getImage(gURL)));
             x += 110;
         }
 //        addKeyListener(this);
@@ -209,16 +218,15 @@ public class BreakingBad extends JFrame implements ActionListener, KeyListener, 
             iSpeedLapse--;
         }
         // checamos choque con cada brick
-        for (Box box : alList) {
-            if (box.intersects(boxBall)) {
-                if (boxBall.getiX() < box.getiX() + 10 || boxBall.getiX() > box.getiX() + box.getiWidth() - 10) {
+        for(int i=0;i<alList.size();i++){
+            if (alList.get(i).intersects(boxBall)) {
+                if (boxBall.getiX() < alList.get(i).getiX() + 10 || boxBall.getiX() > alList.get(i).getiX() + alList.get(i).getiWidth() - 10) {
                     iMovX *= -1;
                 } else {
                     iMovY *= -1;
                 }
                 // "eliminamos" el brick
-                box.setiHeight(0);
-                box.setiWidth(0);
+                alList.remove(alList.get(i));
                 iScore += 100;
                 iBricks--;
             }
@@ -233,12 +241,14 @@ public class BreakingBad extends JFrame implements ActionListener, KeyListener, 
      * @param g
      */
     public void draw(Graphics g) {
-        g.setColor(Color.BLACK);
+        g.setColor(Color.WHITE);
         g.setFont(new Font("Arial", Font.TYPE1_FONT, 20));
         g.drawImage(imgBackground.getImage(), 0, 0, this);
         g.drawString("Lives left: " + iLives + "   Score: " + iScore, 30, 80);
         // Si el juego esta perdido
         if (bEnd) {
+            // Dibuja pantalla de fin
+            g.drawImage(gameover, 0, 0, this);
             // definimos boton
             butReset = new JButton("PLAY AGAIN?");
             butReset.addActionListener(this);
@@ -246,16 +256,18 @@ public class BreakingBad extends JFrame implements ActionListener, KeyListener, 
             butReset.setSize(200, 100);
             add(butReset);
         }
-        if (boxBall != null && boxBar != null && !alList.isEmpty()) {
-            g.setColor(Color.red);
+        if(bPause){
+            // Dibuja pantalla de pausa
+            g.drawImage(pausa, 0, 0, this);
+        }
+        if (!bEnd && !bPause && boxBall != null && boxBar != null && !alList.isEmpty()) {
+            g.setColor(Color.GRAY);
             //Dibuja la pelota en la posicion actualizada
-            g.fillRect(boxBall.getiX(), boxBall.getiY(), boxBall.getiWidth(), boxBall.getiHeight());
-            g.setColor(Color.MAGENTA);
+            g.fillOval(boxBall.getiX(), boxBall.getiY(), boxBall.getiWidth(), boxBall.getiHeight());
             // Dibuja la barra en la posicion actualizada
-            g.fillRect(boxBar.getiX(), boxBar.getiY(), boxBar.getiWidth(), boxBar.getiHeight());
-            g.setColor(Color.GREEN);
+            g.drawImage(boxBar.getImagenI(), boxBar.getiX(),boxBar.getiY(), this);
             for (Box b : alList) {
-                g.fillRect(b.getiX(), b.getiY(), b.getiWidth(), b.getiHeight());
+                g.drawImage(b.getImagenI(), b.getiX(),b.getiY(), this);
             }
         } else {
             //Da un mensaje mientras se carga el dibujo	
@@ -287,7 +299,6 @@ public class BreakingBad extends JFrame implements ActionListener, KeyListener, 
 
         // Dibuja la imagen actualizada
         g.drawImage(dbImage, 0, 0, this);
-        draw(g);
     }
 
     @Override
