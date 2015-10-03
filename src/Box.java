@@ -1,3 +1,6 @@
+
+import java.io.Serializable;
+
 /*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
@@ -8,7 +11,7 @@
  *
  * @author Evan
  */
-public class Box {
+public class Box implements Serializable {
     private int iX;       // posicion en x del objeto
     private int iY;       // posicion en y del objeto
     private int iWidth;   // ancho del objeto

@@ -11,12 +11,24 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Hashtable;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JPanel;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -48,19 +60,48 @@ public class BreakingBad extends JFrame implements ActionListener, KeyListener, 
     private long lNow, lBefore; // Timers de control de velocidad
     ImageIcon imgBackground;
     Thread th;
-
+    JButton butNew;
+    JButton butSave;
+    JButton butLoad;
+    JPanel panel;
+    
     // Constructor de la clase
     BreakingBad() {
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         URL eURL = this.getClass().getResource("bb.jpg");
         imgBackground = new ImageIcon(Toolkit.getDefaultToolkit().getImage(eURL));
-        setLayout(new FlowLayout());
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1080, 900);
         setLocationRelativeTo(null);
         setResizable(false);
-        setVisible(true);
         addKeyListener(this);
         setFocusable(true);
+        setVisible(true);
+        panel = new JPanel();
+        butNew = new JButton("NEW GAME");
+        butNew.setActionCommand("New");
+        butNew.addActionListener(this);
+        butNew.setLocation(420, 500);
+        butNew.setFocusable(false);
+        butNew.setSize(200, 50);
+        butSave = new JButton("SAVE GAME");
+        butSave.setActionCommand("Save");
+        butSave.setFocusable(false);
+        butSave.addActionListener(this);
+        butSave.setLocation(420, 600);
+        butSave.setSize(200, 50);
+        butLoad = new JButton("LOAD GAME");
+        butLoad.setActionCommand("Load");
+        butLoad.addActionListener(this);
+        butLoad.setFocusable(false);
+        butLoad.setLocation(420, 700);
+        butLoad.setSize(200, 50);
+        butNew.setVisible(false);
+        butSave.setVisible(false);
+        butLoad.setVisible(false);
+        panel.add(butNew);
+        panel.add(butSave);
+        panel.add(butLoad);
+        add(panel);
         init();
         start();
     }
@@ -84,7 +125,7 @@ public class BreakingBad extends JFrame implements ActionListener, KeyListener, 
         bPause = false;
         bEnd = false;
         //inicializamos la pelota moviendose hacia abajo 
-        iMovX = 1;
+        iMovX = Math.random() <= 0.5 ? -1 : 1;
         iMovY = 1;
 
         // Inicializamos los bricks en un grid de 15 bricks
@@ -110,7 +151,6 @@ public class BreakingBad extends JFrame implements ActionListener, KeyListener, 
             alList.add(new Box(x, y, 100, 50));
             x += 110;
         }
-//        addKeyListener(this);
     }
 
     /**
@@ -136,11 +176,11 @@ public class BreakingBad extends JFrame implements ActionListener, KeyListener, 
     public void run() {
         // run until lives aren't 0
         while (iLives > 0 && iBricks > 0) {
-            if (!bPause) {
+            repaint();
+            if(!bPause) {
                 actualiza();
                 checaColision();
             }
-            repaint();
             try {
                 // El thread se duerme.
                 Thread.sleep(10);
@@ -175,7 +215,7 @@ public class BreakingBad extends JFrame implements ActionListener, KeyListener, 
 
     /**
      * Metodo <I>checaColision</I> usado para checar las colisiones del objeto
-     * elefante y asteroid con las orillas del <code>Applet</code>.
+     * elefante y asteroid con las orillas del <code>JFrame</code>.
      */
     public void checaColision() {
         // Si la barra toca la pared izquierda se le impide seguir desplazandose
@@ -205,7 +245,7 @@ public class BreakingBad extends JFrame implements ActionListener, KeyListener, 
             boxBall.setiX((int) (Math.random() * this.getWidth()));
             boxBall.setiY((int) (Math.random() * this.getHeight() / 8) + 500);
             iMovY = 1;
-            iMovX = 1;
+            iMovX = Math.random() <= 0.5 ? -1 : 1;
             iSpeedLapse--;
         }
         // checamos choque con cada brick
@@ -222,7 +262,6 @@ public class BreakingBad extends JFrame implements ActionListener, KeyListener, 
                 iScore += 100;
                 iBricks--;
             }
-
         }
     }
 
@@ -233,18 +272,27 @@ public class BreakingBad extends JFrame implements ActionListener, KeyListener, 
      * @param g
      */
     public void draw(Graphics g) {
-        g.setColor(Color.BLACK);
+        g.setColor(Color.WHITE);
         g.setFont(new Font("Arial", Font.TYPE1_FONT, 20));
         g.drawImage(imgBackground.getImage(), 0, 0, this);
         g.drawString("Lives left: " + iLives + "   Score: " + iScore, 30, 80);
+        butNew.setVisible(bPause);
+        butSave.setVisible(bPause);
+        butLoad.setVisible(bPause);
+        // Si el juego esta pausado
+//        if(bPause) {
+//            super.paintComponents(g);
+//        }
         // Si el juego esta perdido
         if (bEnd) {
             // definimos boton
             butReset = new JButton("PLAY AGAIN?");
+            butNew.setActionCommand("New");
             butReset.addActionListener(this);
-            butReset.setLocation(450, 300);
-            butReset.setSize(200, 100);
+            butReset.setLocation(420, 300);
+            butReset.setSize(200, 50);
             add(butReset);
+            super.paintComponents(g);
         }
         if (boxBall != null && boxBar != null && !alList.isEmpty()) {
             g.setColor(Color.red);
@@ -289,11 +337,87 @@ public class BreakingBad extends JFrame implements ActionListener, KeyListener, 
         g.drawImage(dbImage, 0, 0, this);
         draw(g);
     }
+    
+    public void guardarJuego() {
+        Hashtable hash = new Hashtable();
+        hash.put("iDirBar", iDirBar);
+        hash.put("iBricks", iBricks);
+        hash.put("iMovX", iMovX);
+        hash.put("iMovY", iMovY);
+        hash.put("iLives", iLives);
+        hash.put("iScore", iScore);
+        hash.put("iSpeed", iSpeed);
+        hash.put("iSpeedLapse", iSpeedLapse);
+        hash.put("boxBall", boxBall);
+        hash.put("boxBar", boxBar);
+        hash.put("alList", alList);
+//        hash.put("lNow", lNow);
+//        hash.put("lBefore", lBefore);
+        try {
+            FileOutputStream fileOut = new FileOutputStream("savedGame.ser");
+            ObjectOutputStream out = new ObjectOutputStream(fileOut);
+            out.writeObject(hash);
+            
+            out.close();
+            fileOut.close();
+        } catch(FileNotFoundException e) {
+            e.printStackTrace();
+        } catch(IOException e) {
+            e.printStackTrace();
+        }
+        System.out.println("Guardado");
+    }
+    
+    public void cargarJuego() {
+        Hashtable hash = null;
+        
+        try {
+            FileInputStream fileIn = new FileInputStream("savedGame.ser");
+            ObjectInputStream in = new ObjectInputStream(fileIn);
+            hash = (Hashtable) in.readObject();
+            in.close();
+            fileIn.close();
+        } catch(ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch(FileNotFoundException e) {
+            // File not found
+            e.printStackTrace();
+        } catch(IOException e) {
+            e.printStackTrace();
+        }
+        
+        iDirBar = (int) hash.put("iDirBar", iDirBar);
+        iBricks = (int) hash.put("iBricks", iBricks);
+        iMovX = (int) hash.put("iMovX", iMovX);
+        iMovY = (int) hash.put("iMovY", iMovY);
+        iLives = (int) hash.put("iLives", iLives);
+        iScore = (int) hash.put("iScore", iScore);
+        iSpeed = (int) hash.put("iSpeed", iSpeed);
+        iSpeedLapse = (int) hash.put("iSpeedLapse", iSpeedLapse);
+        boxBall = (Box) hash.put("boxBall", boxBall);
+        boxBar = (Box) hash.put("boxBar", boxBar);
+        alList = (ArrayList) hash.put("alList", alList);
+//        lNow = (long) hash.put("lNow", lNow);
+//        lBefore = (long) hash.put("lBefore", lBefore);
+        System.out.println("Cargado");
+    }
 
     @Override
     public void actionPerformed(ActionEvent ae) {
-        this.dispose();
-        new BreakingBad();
+        switch(ae.getActionCommand()) {
+            case "New":
+                this.dispose();
+                new BreakingBad();
+                break;
+            case "Save":
+                guardarJuego();
+//                bPause = false;
+                break;
+            case "Load":
+                cargarJuego();
+//                bPause = false;
+                break;
+        }
     }
 
     @Override
